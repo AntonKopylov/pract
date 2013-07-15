@@ -258,6 +258,123 @@ Packet Tracer - симулятор сети передачи данных, выпускаемый фирмой Cisco Systems
 \centering
 \includegraphics[width=1\textwidth]{12}
 \end{figure}
+\subsection{Протоколы}
+\subsubsection{DHCP}
+DHCP - сетевой протокол, позволяющий компьютерам автоматически получать IP-адрес и другие параметры, необходимые для работы в сети.
+
+Добавлена новая сеть: \\
+192.168.10.0 255.255.255.0\\
+На Router3 настроили DHCP присвоение IP адресов из диапозона:\\ 192.168.10.10 - 192.168.10.254
+Для этого на Router3:\\
+ip dhcp pool net1\\
+network 192.168.10.0 255.255.255.0\\
+default-router 192.168.10.1\\
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
+
+После чего,на всех ПК в IP Configurations выставляем поле DHCP. \\
+На Router3 с помощью команды 
+show ip dhcp binding видим результат работы DHCP сервера.\\
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{13}
+\end{figure}
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{135}
+\end{figure}
+\subsubsection{NAT}
+Network Address Translation — механизм, который позволяет транслировать в один "внешний" ip-адрес много внутренних адресов. 
+
+Дело в том, что теоретически существует 255*255*255*255=4 228 250 625. 4 миллиарда адресов. С распространением всемирной паутины адреса IPv4 исчерпываются. И люди придумали технологию, которая временно поможет справиться с этой проблемой. Так, было предложено разделить пространство адресов на публичные (белые,внешние) и приватные (частные, серые).
+
+К последним относятся три диапазона:\\
+10.0.0.0/8\\
+172.16.0.0/12\\
+192.168.0.0/16
+
+Их можно свободно использовать в своей частной сети, и поэтому, 
+разумеется, они не должны быть уникальными и будут повторяться. Как же быть с уникальностью во внешнем пространсте? 
+
+Тут нам поможет NAT. Рассмотрим на примере сети 40.40.40.0, в котором есть один хост с ip-адресом 40.40.40.2, внутренний порт маршрутизатора: 40.40.40.1, внешний: 30.30.30.2.
+
+Чтобы настроить NAT необходимо:\\
+1) Указать "Внешний" и "Внутренний" интерфейсы маршрутизатора на котором настраиваем NAT.\\
+interface fastethernet 0/0\\
+ip nat inside\\
+exit\\
+interface fastethernet 1/0\\
+ip nat outside\\
+2) Далле создаём разрешающее правило с именем "5":\\
+access-list 5 permit any\\
+3) Далее привязываем созданное правило к внешнему интерфейсу:\\
+ip nat inside sourse list 5 interface fastethernet 1/0 overload 
+
+Что же будет происходить, когда мы будем пинговать с нашего 40.40.40.1 какой-нибудь внешний адрес, например: 10.10.10.2? 
+
+Формируем эхо запрос. В командрой строке PC5 набираем ping 10.10.10.2. 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{14}
+\end{figure}\\
+Далее переключаемся на режим "симуляции" в правом нижмем углу и наблюдаем процесс шаг за шагом.\\
+
+\newpage
+Шаг1:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{15}
+\end{figure}
+
+\newpage
+Шаг2:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{16}
+\end{figure}
+Как видим, ip.src на данном шаге поменялся с 40.40.40.2 на 30.30.30.2. Т.е. натирующее устройствро "Router1" заменяет в заголовке IP пакета адрес источника и вставдяет свой адрес. 
+\newpage
+Шаг3:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{17}
+\end{figure}
+Шаг4:
+
+Получив запрос от 30.30.30.2, PC4 отправляем ICMP replay на адрес 30.30.30.2 (натирующее устройство)
+\newpage
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{18}
+\end{figure}
+Шаг5:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.87\textwidth]{19}
+\end{figure}
+\newpage
+Шаг6:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{20}
+\end{figure}
+На этом же шаге происходит обратная замена, IP получателся меняется с 30.30.30.2 на 40.40.40.2 (PC5).
+
+Шаг7:
+
+PC5 благополучно получил ответ от PC4 и даже не подозревает о "магических" { }преобразованиях, которые происходили с его пакетами в сети. 
+
+Стоит отметить, что PC5 скрывается с помощью технологии NAT от внешних запросов.
+\newpage
+\begin{figure}[h]
+\centering
+\includegraphics[width=1\textwidth]{21}
+\end{figure}
+\newpage
 
 
 \end{spacing}
